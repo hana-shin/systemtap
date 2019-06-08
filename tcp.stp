@@ -1,0 +1,37 @@
+#!/usr/bin/stap
+#for CentOS7.4
+
+function print_sock(sk)
+{
+  port = inet_get_local_port(sk);
+  ip = inet_get_ip_source(sk);
+  if( port == $1) {
+    printf ("pp=%s,ip=%s,port=%d\n", pp(),ip,port)
+  }
+}
+
+probe kernel.statement("tcp_rcv_established@net/ipv4/tcp_input.c:5316")
+{
+  print_sock($sk)
+}
+
+probe kernel.statement("tcp_v4_do_rcv@net/ipv4/tcp_ipv4.c:1482")
+{
+  print_sock($sk)
+}
+
+probe kernel.statement("tcp_rcv_state_process@net/ipv4/tcp_input.c:5708")
+{
+  print_sock($sk)
+}
+
+probe kernel.statement("tcp_rcv_state_process@net/ipv4/tcp_input.c:5708")
+{
+  print_sock($sk)
+}
+
+
+probe kernel.statement("inet_csk_reqsk_queue_hash_add@net/ipv4/inet_connection_sock.c")
+{
+  print_sock($sk)
+}
