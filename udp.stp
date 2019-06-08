@@ -1,0 +1,35 @@
+[root@server stap]# cat udp.stp
+#!/usr/bin/stap
+
+# for CentOS7.4
+
+function print_conn(skb)
+{
+  iphdr  = __get_skb_iphdr(skb)
+  daddr  = format_ipaddr(__ip_skb_daddr(iphdr), AF_INET())
+  saddr  = format_ipaddr(__ip_skb_saddr(iphdr), AF_INET())
+  if( saddr == "192.168.3.50"){
+   printf("pp=%s,%s->%s\n", pp(), saddr, daddr);
+  }
+}
+
+probe kernel.function("__udp4_lib_rcv@net/ipv4/udp.c")
+{
+  print_conn($skb)
+}
+
+probe kernel.function("udp_queue_rcv_skb@net/ipv4/udp.c")
+{
+  print_conn($skb)
+}
+
+probe kernel.function("__udp_queue_rcv_skb@net/ipv4/udp.c")
+{
+  print_conn($skb)
+}
+
+probe kernel.function("__udp_enqueue_schedule_skb@net/ipv4/udp.c")
+{
+  printf("truesize=%d,len=%d, data_len=%d\n", $skb->truesize, $skb->len, $skb->data_len)
+  print_conn($skb)
+}
