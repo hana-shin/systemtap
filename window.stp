@@ -1,0 +1,40 @@
+#!/usr/bin/stap
+
+probe module("nf_conntrack").statement("tcp_in_window@net/netfilter/nf_conntrack_proto_tcp.c:733")
+{
+  source = &@cast($tcph, "struct tcphdr", "kernel<uapi/linux/tcp.h>")->source
+  dest = &@cast($tcph, "struct tcphdr", "kernel<uapi/linux/tcp.h>")->dest
+
+  sport = ntohs(kernel_short(source))
+  dport = ntohs(kernel_short(dest))
+
+  if((sport == 11111) || (dport == 11111)){
+    send = &@cast($state, "struct ip_ct_tcp", "kernel:nf_conntrack")->seen[$dir]
+    recv = &@cast($state, "struct ip_ct_tcp", "kernel:nf_conntrack")->seen[!$dir]
+
+    printf("-------------------------------------------------------------------------\n")
+    printf("sender->td_end=%d, sender->td_maxend=%d, sender->td_maxwin=%d\n",
+        send->td_end, send->td_maxend, send->td_maxwin)
+
+    printf("receiver->td_end=%d, receiver->td_maxend=%d, receiver->td_maxwin=%d\n",
+        recv->td_end, recv->td_maxend, recv->td_maxwin)
+
+    syn = @cast($tcph, "struct tcphdr", "kernel<uapi/linux/tcp.h>")->syn
+    fin = @cast($tcph, "struct tcphdr", "kernel<uapi/linux/tcp.h>")->fin
+    ack = @cast($tcph, "struct tcphdr", "kernel<uapi/linux/tcp.h>")->ack
+
+    seq_tmp = &@cast($tcph, "struct tcphdr", "kernel<uapi/linux/tcp.h>")->seq
+    seq = ntohl(kernel_int(seq_tmp))
+
+    ack_seq_tmp = &@cast($tcph, "struct tcphdr", "kernel<uapi/linux/tcp.h>")->ack_seq
+    ack_seq = ntohl(kernel_int(ack_seq_tmp))
+
+    win_tmp = &@cast($tcph, "struct tcphdr", "kernel<uapi/linux/tcp.h>")->window
+    win = ntohs(kernel_short(win_tmp))
+
+    printf("dir=%d, sport=%d, dport=%d, syn=%d, fin=%d, ack=%d, seq=%d, ack=%d, win=%d\n",
+        $dir, sport, dport, syn, fin, ack, seq, ack_seq, win)
+
+    printf("\n")
+  }
+}
