@@ -1,5 +1,9 @@
 #!/usr/bin/stap
 
+#
+# for CentOS 7.4
+#
+
 probe module("nf_conntrack").statement("tcp_in_window@net/netfilter/nf_conntrack_proto_tcp.c:733")
 {
   source = &@cast($tcph, "struct tcphdr", "kernel<uapi/linux/tcp.h>")->source
