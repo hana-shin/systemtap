@@ -1,0 +1,28 @@
+#!/usr/bin/stap
+
+%{
+#include <linux/jiffies.h>
+%}
+
+function get_jiffies()
+%{
+    THIS->__retvalue = jiffies;
+%}
+
+function print_conn(skb)
+{
+  iphdr  = __get_skb_iphdr(skb)
+  proto  = __ip_skb_proto(iphdr)
+  daddr  = format_ipaddr(__ip_skb_daddr(iphdr), AF_INET())
+  saddr  = format_ipaddr(__ip_skb_saddr(iphdr), AF_INET())
+
+  if(proto == 1) {
+    printf("jiffies=%d ,pp=%s, %s->%s\n", get_jiffies() ,pp(), saddr, daddr);
+  }
+}
+
+
+probe kernel.function("ip_output@net/ipv4/ip_output.c")
+{
+  print_conn($skb)
+}
