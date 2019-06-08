@@ -1,0 +1,23 @@
+#!/usr/bin/stap
+
+global ipdstlist
+
+function print_conn(skb)
+{
+  iphdr  = __get_skb_iphdr(skb)
+  daddr  = format_ipaddr(__ip_skb_daddr(iphdr), AF_INET())
+  ipdstlist[daddr]++
+}
+
+probe kernel.function("ip_output@net/ipv4/ip_output.c")
+{
+  if(execname() == "ping"){
+    print_conn($skb)
+  }
+}
+
+probe end
+{
+  foreach(i in ipdstlist-)
+    printf("%s : %d\n", i, ipdstlist[i])
+}
